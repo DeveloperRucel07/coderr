@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    'auth_app',
+    'auth_app.apps.AuthAppConfig',
     'coderr_app',
     
 ]

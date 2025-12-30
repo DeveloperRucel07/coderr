@@ -1,10 +1,13 @@
-from rest_framework import status, generics
+from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
-from .serializers import LoginWithEmailSerializer, RegistrationSerializer
+from auth_app.models import Profile
+from .serializers import LoginWithEmailSerializer, RegistrationSerializer, ProfileSerializer, ProfileCustomerSerialiser, ProfileBusinessSerialiser
+from .permissions import IsOwnerOrReadOnly
 
 class RegistrationView(APIView):
     permission_classes = [AllowAny]
@@ -73,5 +76,23 @@ class LogoutView(APIView):
         request.user.auth_token.delete() 
         return Response({"detail": "Logout Successfully. Your Token was deleted"}, status=status.HTTP_200_OK)
     
-class ProfilesBussinessListView(generics.ListAPIView):
-    pass
+class ProfilesBusinessListView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProfileBusinessSerialiser
+    def get_queryset(self):
+        return Profile.objects.filter(type ='business')
+   
+    
+class ProfilesCustomerListView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProfileCustomerSerialiser
+    def get_queryset(self):
+        return Profile.objects.filter(type ='customer')
+    
+    
+class UserProfileGetUpdateView(RetrieveUpdateAPIView):
+    permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
+    serializer_class = ProfileSerializer
+    queryset = Profile.objects.all()
+    http_method_names = ['get', 'patch']
+    

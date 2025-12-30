@@ -59,7 +59,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
     validate if the both password are correct or not.
     
     '''
-    repeated_password = serializers.CharField(write_only = True)
+    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+    repeated_password = serializers.CharField(write_only=True)
+    type = serializers.ChoiceField(choices = Profile.USER_TYPES)
     class Meta:
         model = User
         fields = ['username', 'email','password', 'repeated_password','type']
@@ -100,7 +104,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name')
     last_name = serializers.CharField(source='user.last_name')
     email = serializers.EmailField(source='user.email')
-
+    file = serializers.SerializerMethodField()
     class Meta:
         model = Profile
         fields = [
@@ -116,14 +120,31 @@ class ProfileSerializer(serializers.ModelSerializer):
             'working_hours',
             'type',
             'created_at',
-        ]  
+        ]
+        
+    def get_file(self, obj):
+        return obj.file.url if obj.file else '' 
         
 class ProfileCustomerSerialiser(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+    file = serializers.SerializerMethodField()
     class Meta:
         model = Profile
         fields = ['user','username', 'first_name', 'last_name', 'file', 'type' ]  
         
-class ProfileBussinessSerialiser(serializers.ModelSerializer):
+    def get_file(self, obj):
+        return obj.file.url if obj.file else '' 
+    
+class ProfileBusinessSerialiser(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+    file = serializers.SerializerMethodField()
     class Meta:
         model = Profile
-        fields = ['user','username', 'first_name', 'last_name', 'file', 'location', 'tel', 'description', 'working_hours', 'type' ]  
+        fields = ['user','username', 'first_name', 'last_name', 'file', 'location', 'tel', 'description', 'working_hours', 'type' ] 
+    
+    def get_file(self, obj):
+        return obj.file.url if obj.file else ''
