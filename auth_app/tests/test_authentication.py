@@ -11,7 +11,7 @@ class UserRegistrationTest(APITestCase):
     def setUp(self):
         self.url = reverse('registration')
         
-        self.valid_payload = {
+        self.valid_data = {
             'username': 'TestUser',
             'email': 'example@mail.de',
             'password': 'examplePassword',
@@ -21,7 +21,7 @@ class UserRegistrationTest(APITestCase):
 
         
     def test_user_registration_creates_profile(self):
-        response = self.client.post(self.url, self.valid_payload, format='json')
+        response = self.client.post(self.url, self.valid_data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username='TestUser').exists())
@@ -30,9 +30,6 @@ class UserRegistrationTest(APITestCase):
         profile = Profile.objects.get(user=user)
         self.assertEqual(profile.type, 'customer')
         self.assertTrue(user.check_password('examplePassword'))
-        if profile:
-            print('✅ Greet Your Profile was created successfully successfully')
-        
 class UserLoginTest(APITestCase):
     def setUp(self):
         self.url = reverse('login')
@@ -40,24 +37,18 @@ class UserLoginTest(APITestCase):
         self.user= User.objects.create_user(username= 'TestUser', password = self.password)
     
     def test_login_success(self):
-        payload = {
+        data = {
             'username': self.user.username,
             'password': self.password
         }
         
-        response = self.client.post(self.url, payload, format='json')
+        response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        if response.status_code== status.HTTP_200_OK:
-            print(f'✅ User {self.user.username} logged in successfully')
 
     def test_login_errors(self):
-        payload = {
+        data = {
             'username': self.user.username,
             'password': 'ThisIsTheWrongPassword'
         }
-        response = self.client.post(self.url, payload, format='json')
+        response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        
-        if response.status_code== status.HTTP_400_BAD_REQUEST:
-            print('❌ Please check your username and Password')
