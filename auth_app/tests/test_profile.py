@@ -63,6 +63,23 @@ class TestProfile(APITestCase):
         self.user3.profile.refresh_from_db()
         self.assertEqual(self.user3.profile.description, 'python backend software developer')
         self.assertEqual(self.user3.profile.location, 'Berlin')
+    
+    
+    def test_put_owner_profile(self):
+        data = {
+            'username': 'max_mustermann',
+            'first_name': 'Max',
+            'last_name': 'Mustermann',
+            'file': 'profile_picture.jpg',
+            'location': 'Berlin',
+            'tel': '123456789',
+            'description': 'Business description',
+            'working_hours': '9-17',
+            'type': 'business',
+            'email': 'max@business.de',
+        }
+        response = self.client.put(self.url_user3, data, format = 'json')
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         
           
     def test_patch_others_profile(self):

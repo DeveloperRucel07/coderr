@@ -10,7 +10,6 @@ class UserRegistrationTest(APITestCase):
     
     def setUp(self):
         self.url = reverse('registration')
-        
         self.valid_data = {
             'username': 'TestUser',
             'email': 'example@mail.de',
@@ -18,11 +17,9 @@ class UserRegistrationTest(APITestCase):
             'repeated_password': 'examplePassword',
             'type': 'customer',
         }
-
-        
+ 
     def test_user_registration_creates_profile(self):
         response = self.client.post(self.url, self.valid_data, format='json')
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username='TestUser').exists())
         user = User.objects.get(username='TestUser')
@@ -30,6 +27,7 @@ class UserRegistrationTest(APITestCase):
         profile = Profile.objects.get(user=user)
         self.assertEqual(profile.type, 'customer')
         self.assertTrue(user.check_password('examplePassword'))
+        
 class UserLoginTest(APITestCase):
     def setUp(self):
         self.url = reverse('login')
