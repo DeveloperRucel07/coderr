@@ -1,13 +1,16 @@
+from django.db.models import Q
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
-from coderr_app.models import Offer, Review, OfferDetail
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from coderr_app.models import Offer, Review, OfferDetail, Order
 from .serializers import BaseInfoSerialiser, OfferDetailSerializer, OrderCreateSerializer, OfferListSerializer, OfferSerializer, OrderSerializer, OrderStatusUpdateSerializer, ReviewCreateSerializer, ReviewSerializer, OfferDetailOrderSerializer
-from .permissions import IsBusinessUserOrOwnerOrReadOnly, IsCustomerReviewer, IsReviewOwnerOrReadOnly
+from .permissions import IsAdminOrStaff, IsBusinessOrCustomerUser, IsBusinessUserOrOwnerOrReadOnly, IsBusinessUserOrder, IsCustomerReviewer, IsReviewOwnerOrReadOnly
 
 
 class OfferListCreateView(ModelViewSet):
@@ -42,10 +45,27 @@ class OfferDetailView(RetrieveAPIView):
 
 class OrderViewSet(ModelViewSet):
     serializer_class = OrderCreateSerializer
-    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        user  = self.request.user
+        return Order.objects.filter(Q(customer_user=user) | Q(business_user=user))
+    
 
     def get_serializer_context(self):
         return {'request': self.request}
+    
+    def get_permissions(self):
+        if self.action == 'list':
+            return [IsBusinessOrCustomerUser()]
+        if self.action == 'retrieve':
+            return [IsAuthenticated(), IsBusinessUserOrOwnerOrReadOnly()]
+        if self.action == 'create':
+            return [IsAuthenticated(), IsCustomerReviewer()]
+        if self.action == 'partial_update':
+            return [IsAuthenticated(), IsBusinessUserOrder(), IsBusinessOrCustomerUser()]
+        if self.action == 'destroy':
+            return [IsAuthenticated(), IsAdminOrStaff()]
+        return [IsBusinessOrCustomerUser()]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -60,13 +80,45 @@ class OrderViewSet(ModelViewSet):
         order = serializer.save()
         
         return Response( OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+    
+    def partial_update(self, request, *args, **kwargs):
+        order = self.get_object()
+        user = request.user
+        if user != order.business_user:
+            return Response({'detail':'Yopu dont have permission to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+        serialiser = self.get_serializer(order, data = request.data)
+        serialiser.is_valid(raise_exception=True)
+        data = serialiser.save()
+        return Response( OrderSerializer(data).data, status=status.HTTP_200_OK)
+    
 
 class OrderCountView(APIView):
-    pass
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_user_id):
+        user = get_object_or_404(User, id=business_user_id)
+
+        if not hasattr(user, 'profile') or user.profile.type != 'business':
+            return Response({'detail': 'The user is not found or is not a business user.'},status=status.HTTP_404_NOT_FOUND)
+        
+        count = Order.objects.filter( business_user=user, status='in_progress').count()
+
+        return Response({'order-count': count}, status=status.HTTP_200_OK)
 
 
 class CompletedOrderCountView(APIView):
-    pass
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_user_id):
+        user = get_object_or_404(User, id=business_user_id)
+
+        if not hasattr(user, 'profile') or user.profile.type != 'business':
+            return Response({'detail': 'The user is not found or is not a business user.'},status=status.HTTP_404_NOT_FOUND)
+        
+        count = Order.objects.filter( business_user=user, status='completed').count()
+
+        return Response({'completed_order_count': count}, status=status.HTTP_200_OK)
+
 
 class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()

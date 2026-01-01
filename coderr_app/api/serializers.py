@@ -36,7 +36,6 @@ class OfferSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         request = self.context['request']
-
         if request.user.profile.type != 'business':
             raise serializers.ValidationError('Only business users can create offers.')
         return attrs

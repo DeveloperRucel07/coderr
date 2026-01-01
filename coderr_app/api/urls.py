@@ -12,6 +12,6 @@ urlpatterns = [
     path('base-info/', BaseInfoView.as_view() , name = 'base-info'),
     path('offerdetails/<int:pk>/', OfferDetailView.as_view() ,name = 'offerdetail-detail'),
     path('order-count/<int:business_user_id>/', OrderCountView.as_view(), name = 'order-count'),
-    path('order-completed-order-count/<int:business_user_id>/',CompletedOrderCountView.as_view(), name = 'completed-order-count'),
+    path('completed-order-count/<int:business_user_id>/',CompletedOrderCountView.as_view(), name = 'completed-order-count'),
     
 ]
