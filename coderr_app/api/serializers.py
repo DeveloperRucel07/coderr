@@ -1,9 +1,14 @@
 from rest_framework import serializers
-from coderr_app.models import Offer, OfferDetail, Order
+from django.contrib.auth.models import User
+from coderr_app.models import Offer, OfferDetail, Order, Review
 
 
+class UserDetailSerialiser(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields =['first_name', 'last_name', 'username'] 
 
-class OfferDetailSerializer(serializers.ModelSerializer):
+class OfferDetailOrderSerializer(serializers.ModelSerializer):
     features = serializers.ListField( child=serializers.CharField(max_length=100))
 
     class Meta:
@@ -13,7 +18,7 @@ class OfferDetailSerializer(serializers.ModelSerializer):
 
 
 class OfferSerializer(serializers.ModelSerializer):
-    details = OfferDetailSerializer(many=True)
+    details = OfferDetailOrderSerializer(many=True)
     user = serializers.ReadOnlyField(source='user.id')
     class Meta:
         model = Offer
@@ -62,10 +67,11 @@ class OfferListSerializer(serializers.ModelSerializer):
 
     min_price = serializers.SerializerMethodField()
     min_delivery_time = serializers.SerializerMethodField()
+    user_details = UserDetailSerialiser(source = 'user', read_only = True)
 
     class Meta:
         model = Offer
-        fields = [ 'id', 'user', 'title', 'image', 'description', 'created_at', 'updated_at', 'details', 'min_price', 'min_delivery_time' ]
+        fields = [ 'id', 'user', 'title', 'image', 'description', 'created_at', 'updated_at', 'details', 'min_price', 'min_delivery_time', 'user_details' ]
         
     def get_min_price(self, obj):
         return obj.details.order_by('price').values_list(
@@ -76,7 +82,22 @@ class OfferListSerializer(serializers.ModelSerializer):
         return obj.details.order_by('delivery_time_in_days').values_list(
             'delivery_time_in_days', flat=True
         ).first()
+
+
+class OfferDetailSerializer(serializers.ModelSerializer):
+    details = OfferDetailLinkSerializer(many=True, read_only=True)
+    min_price = serializers.SerializerMethodField()
+    min_delivery_time = serializers.SerializerMethodField()
     
+    class Meta:
+        model = Offer
+        fields = ['id',  'user',  'title',  'image',  'description',  'created_at',  'updated_at',  'details', 'min_price', 'min_delivery_time'  ]
+        
+    def get_min_price(self, obj):
+        return obj.details.order_by('price').values_list('price', flat=True ).first()
+        
+    def get_min_delivery_time(self, obj):
+        return obj.details.order_by('delivery_time_in_days').values_list('delivery_time_in_days', flat=True).first()
 
 
 class OrderCreateSerializer(serializers.Serializer):
@@ -136,3 +157,30 @@ class OrderStatusUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f'Cannot change status from {current_status} to {value}.')
 
         return value
+
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['id', 'business_user', 'rating', 'description']
+        read_only_fields = ['id']
+
+    def validate_business_user(self, value):
+        if getattr(value.profile, 'type', None) != 'business':
+            raise serializers.ValidationError('You can only review business users.')
+        return value
+
+    def create(self, validated_data):
+        request = self.context['request']
+        return Review.objects.create(reviewer=request.user, **validated_data)
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = [ 'id', 'business_user', 'reviewer', 'rating', 'description', 'created_at', 'updated_at' ]
+        read_only_fields = fields
+
+
+class BaseInfoSerialiser(serializers.ModelSerializer):
+    class Meta:
+        fields = ['review_count', 'average_rating', 'business_profile_count', 'offer_count']

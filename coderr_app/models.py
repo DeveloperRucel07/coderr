@@ -7,6 +7,8 @@ class Offer(models.Model):
     title = models.CharField(max_length=255)
     image = models.ImageField(upload_to='offers/', null=True, blank=True)
     description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
         if self.pk:
@@ -64,3 +66,13 @@ class Order(models.Model):
         return f'Order #{self.id} - {self.title}'
     
 
+class Review(models.Model):
+    reviewer  = models.ForeignKey(User, related_name='reviewer', on_delete=models.CASCADE)
+    business_user = models.ForeignKey(User, related_name='review_for', on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField()
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f'Review {self.rating}/5 by {self.reviewer} for {self.business_user}'
