@@ -1,20 +1,30 @@
-from django.db.models import Q
+from django.db.models import Q, Count, Avg
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from auth_app.models import Profile
 from coderr_app.models import Offer, Review, OfferDetail, Order
-from .serializers import BaseInfoSerialiser, OfferDetailSerializer, OrderCreateSerializer, OfferListSerializer, OfferSerializer, OrderSerializer, OrderStatusUpdateSerializer, ReviewCreateSerializer, ReviewSerializer, OfferDetailOrderSerializer
+from .filters import OfferFilter
+from .limit_paginations import OfferPagination
+from .serializers import  OfferDetailSerializer, OfferUpdateSerializer, OrderCreateSerializer, OfferListSerializer, OfferSerializer, OrderSerializer, OrderStatusUpdateSerializer, ReviewSerializer, OfferDetailOrderSerializer
 from .permissions import IsAdminOrStaff, IsBusinessOrCustomerUser, IsBusinessUserOrOwnerOrReadOnly, IsBusinessUserOrder, IsCustomerReviewer, IsReviewOwnerOrReadOnly
 
 
-class OfferListCreateView(ModelViewSet):
+class OfferModelViewSet(ModelViewSet):
     queryset = Offer.objects.prefetch_related('details')
+    pagination_class = OfferPagination
+    filter_backends = [ DjangoFilterBackend, SearchFilter, OrderingFilter ]
+    filterset_class = OfferFilter
+    search_fields = ['title', 'description' ]
+    ordering_fields = [ 'updated_at',  'min_price' ]
+    ordering = ['-updated_at']
     
     def get_permissions(self):
         if self.action == 'list':
@@ -34,6 +44,8 @@ class OfferListCreateView(ModelViewSet):
             return OfferDetailSerializer
         if self.action == 'create':
             return OfferSerializer
+        if self.action == 'partial_update':
+            return OfferUpdateSerializer
         return OfferDetailSerializer
 
 
@@ -49,7 +61,6 @@ class OrderViewSet(ModelViewSet):
     def get_queryset(self):
         user  = self.request.user
         return Order.objects.filter(Q(customer_user=user) | Q(business_user=user))
-    
 
     def get_serializer_context(self):
         return {'request': self.request}
@@ -85,7 +96,7 @@ class OrderViewSet(ModelViewSet):
         order = self.get_object()
         user = request.user
         if user != order.business_user:
-            return Response({'detail':'Yopu dont have permission to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail':'You dont have permission to perform this action'}, status=status.HTTP_403_FORBIDDEN)
         serialiser = self.get_serializer(order, data = request.data)
         serialiser.is_valid(raise_exception=True)
         data = serialiser.save()
@@ -122,14 +133,25 @@ class CompletedOrderCountView(APIView):
 
 class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
-    permission_classes = [IsCustomerReviewer, IsReviewOwnerOrReadOnly, IsAuthenticated]
+    permission_classes = [IsCustomerReviewer, IsReviewOwnerOrReadOnly]
+    serializer_class = ReviewSerializer
 
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return ReviewCreateSerializer
-        return ReviewSerializer
 
 class BaseInfoView(APIView):
     permission_classes = [AllowAny]
-    serializer_class = BaseInfoSerialiser
+    
+    def get(self, request):
+        data = {}
+        review_stats = Review.objects.aggregate(review_count = Count('id'), average_rating = Avg('rating'))
+        data['review_count'] = review_stats['review_count']
+        data['average_rating'] = (round(review_stats['average_rating'], 1) if review_stats['average_rating'] is not None else 0)
+        
+        data['business_profile_count'] = Profile.objects.filter(type = 'business').count()
+        data['offer_count'] = Offer.objects.count()
+        return Response(data, status=status.HTTP_200_OK)
+        
+    
+    
+    
+    
     

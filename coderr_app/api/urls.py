@@ -1,9 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import  OfferListCreateView, ReviewViewSet, OrderViewSet, BaseInfoView, OfferDetailView, OrderCountView, CompletedOrderCountView
+from .views import  OfferModelViewSet, ReviewViewSet, OrderViewSet, BaseInfoView, OfferDetailView, OrderCountView, CompletedOrderCountView
 
 router = DefaultRouter()
-router.register( r'offers', OfferListCreateView, basename='offer')
+router.register( r'offers', OfferModelViewSet, basename='offer')
 router.register( r'orders', OrderViewSet, basename='order')
 router.register( r'reviews', ReviewViewSet, basename='review')
 

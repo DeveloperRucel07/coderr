@@ -1,4 +1,6 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from django.db import transaction
 from django.contrib.auth.models import User
 from coderr_app.models import Offer, OfferDetail, Order, Review
 
@@ -16,6 +18,11 @@ class OfferDetailOrderSerializer(serializers.ModelSerializer):
         fields = [ 'id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
         read_only_fields = ['id']
 
+class OfferDetailUpdateSerializer(serializers.ModelSerializer):
+    offer_type = serializers.ChoiceField(choices=OfferDetail.OFFER_TYPE_CHOICES, required = True)
+    class Meta:
+        model = OfferDetail
+        fields = [  'title',  'revisions',  'delivery_time_in_days',  'price',  'features',  'offer_type']
 
 class OfferSerializer(serializers.ModelSerializer):
     details = OfferDetailOrderSerializer(many=True)
@@ -82,6 +89,48 @@ class OfferListSerializer(serializers.ModelSerializer):
             'delivery_time_in_days', flat=True
         ).first()
 
+class OfferUpdateSerializer(serializers.ModelSerializer):
+    details = OfferDetailUpdateSerializer(many=True, required=False)
+    class Meta:
+        model = Offer
+        fields = [ 'title', 'description', 'image', 'details'  ]
+    
+    def validate_details(self, value):
+        allowed_types = {'basic', 'standard', 'premium'}
+        for detail in value:
+            offer_type = detail.get('offer_type')
+            if offer_type and offer_type not in allowed_types:
+                raise serializers.ValidationError(f'Invalid offer type: {offer_type}')
+        return value
+        
+    # @transaction.atomic
+    def update(self, instance, validated_data):
+        details_data = validated_data.pop('details', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        if details_data:
+            for detail_data in details_data:
+                offer_type = detail_data.get('offer_type')
+                
+                if not offer_type:
+                    raise serializers.ValidationError('offer_type is required to update an offer detail.')
+                
+                try:
+                    detail = instance.details.get(offer_type = offer_type)
+                except OfferDetail.DoesNotExist:
+                    raise serializers.ValidationError(f'Offer detail with type {offer_type} not found.')
+                
+                
+                for attr, value in detail_data.items():
+                    if attr != 'offer_type':
+                        setattr(detail, attr, value)
+                
+                detail.save()
+        return instance
+        
+    
 
 class OfferDetailSerializer(serializers.ModelSerializer):
     details = OfferDetailLinkSerializer(many=True, read_only=True)
@@ -145,41 +194,38 @@ class OrderStatusUpdateSerializer(serializers.ModelSerializer):
         fields = ['status']
 
     def validate_status(self, value):
-        allowed_transitions = {
-            'in_progress': ['completed', 'cancelled'],
-            'completed': [],
-            'cancelled': [],
-        }
+        allowed_statuses = {'in_progress', 'completed', 'cancelled'}
 
-        current_status = self.instance.status
-        if value not in allowed_transitions[current_status]:
-            raise serializers.ValidationError(f'Cannot change status from {current_status} to {value}.')
-
+        if value not in allowed_statuses:
+            raise serializers.ValidationError('Invalid status.')
         return value
 
 
-class ReviewCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = ['id', 'business_user', 'rating', 'description']
-        read_only_fields = ['id']
-
-    def validate_business_user(self, value):
-        if getattr(value.profile, 'type', None) != 'business':
-            raise serializers.ValidationError('You can only review business users.')
-        return value
-
-    def create(self, validated_data):
-        request = self.context['request']
-        return Review.objects.create(reviewer=request.user, **validated_data)
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = [ 'id', 'business_user', 'reviewer', 'rating', 'description', 'created_at', 'updated_at' ]
-        read_only_fields = fields
+        read_only_fields = ['id', 'created_at', 'updated_at', 'reviewer']
+        
+    def validate_business_user(self, value):
+        if getattr(value.profile, 'type', None) != 'business':
+            raise serializers.ValidationError('You can only review business users.')
+        return value
+    
+    def validate(self, attrs):
+        request = self.context['request']
+        if self.instance is None:
+            if Review.objects.filter( business_user=attrs['business_user'], reviewer=request.user).exists():
+                raise serializers.ValidationError('You have already reviewed this business user.')
+        return attrs
 
-
-class BaseInfoSerialiser(serializers.ModelSerializer):
-    class Meta:
-        fields = ['review_count', 'average_rating', 'business_profile_count', 'offer_count']
+    def create(self, validated_data):
+        request = self.context['request']
+        return Review.objects.create(reviewer=request.user, **validated_data)
+    
+    def update(self, instance, validated_data):
+        instance.rating = validated_data.get('rating', instance.rating)
+        instance.description = validated_data.get('description', instance.description)
+        instance.save()
+        return instance
