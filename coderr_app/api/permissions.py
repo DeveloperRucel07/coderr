@@ -6,6 +6,11 @@ class IsAdminOrStaff(BasePermission):
 
     def has_permission(self, request, view):
         return (request.user.is_staff or request.user.is_superuser)
+    
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'DELETE':
+            return (request.user.is_staff or request.user.is_superuser)
+        return True
 
 class IsBusinessUserOrOwnerOrReadOnly(BasePermission):
     
@@ -53,7 +58,6 @@ class IsReviewOwnerOrReadOnly(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
-
         return obj.reviewer == request.user
 
 
@@ -65,5 +69,7 @@ class IsBusinessOrCustomerUser(BasePermission):
             return (obj.customer_user == user or obj.business_user == user)
         if request.method == 'PATCH':
             return obj.business_user == user
+        if request.method == 'DELETE':
+            return user == user.is_staff or user == user.is_superuser
         return False
     

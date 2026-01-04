@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from auth_app.models import Profile
 from coderr_app.models import Offer, Review, OfferDetail, Order
 from .filters import OfferFilter
@@ -60,6 +60,8 @@ class OrderViewSet(ModelViewSet):
     
     def get_queryset(self):
         user  = self.request.user
+        if self.action == 'destroy':
+            return Order.objects.all()
         return Order.objects.filter(Q(customer_user=user) | Q(business_user=user))
 
     def get_serializer_context(self):
@@ -69,7 +71,7 @@ class OrderViewSet(ModelViewSet):
         if self.action == 'list':
             return [IsBusinessOrCustomerUser()]
         if self.action == 'retrieve':
-            return [IsAuthenticated(), IsBusinessUserOrOwnerOrReadOnly()]
+            return [IsAuthenticated(), IsBusinessUserOrOwnerOrReadOnly(), IsBusinessOrCustomerUser()]
         if self.action == 'create':
             return [IsAuthenticated(), IsCustomerReviewer()]
         if self.action == 'partial_update':
