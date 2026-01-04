@@ -106,7 +106,6 @@ class OrderTestCase(APITestCase):
             offer_type=self.premium.offer_type,
         )
         
-
     def test_get_all_order(self):
         url = reverse('order-list')
         response = self.client2.get(url) # 'client2' customer or business user can only see they orders.
@@ -149,5 +148,5 @@ class OrderTestCase(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Order.objects.filter(id=self.order3.id).exists())
-        
+    
     
