@@ -38,17 +38,23 @@ class RegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(ObtainAuthToken):
+    """
+    API view for user login.
+
+    Handles user authentication using username and password.
+    """
     permission_classes = [AllowAny]
     serializer_class = LoginWithEmailSerializer
     def post(self, request):
-        """Login User View
+        """
+        Handle POST request for user login.
 
         Args:
-            request (request): request
+            request: The HTTP request containing login credentials.
 
         Returns:
-            data, status: return the user data with the status 200, if the infornmations was correct 
-            and 400 if noting was probided or if informatons provided as incorrect.
+            Response: JSON response with user data and token on success,
+                     or error message on failure.
         """
         
         serializer = self.serializer_class(data = request.data)

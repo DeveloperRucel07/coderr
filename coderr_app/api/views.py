@@ -18,6 +18,12 @@ from .permissions import IsAdminOrStaff, IsBusinessOrCustomerUser, IsBusinessUse
 
 
 class OfferModelViewSet(ModelViewSet):
+    """
+    ViewSet for managing offers.
+
+    Handles offer creation, listing, updating, and deletion with appropriate permissions.
+    Supports filtering, searching, and ordering.
+    """
     queryset = Offer.objects.prefetch_related('details')
     pagination_class = OfferPagination
     filter_backends = [ DjangoFilterBackend, SearchFilter, OrderingFilter ]
@@ -50,12 +56,22 @@ class OfferModelViewSet(ModelViewSet):
 
 
 class OfferDetailView(RetrieveAPIView):
+    """
+    API view for retrieving a single offer detail.
+
+    Requires authentication to access.
+    """
     serializer_class = OfferDetailOrderSerializer
     permission_classes  = [IsAuthenticated]
     queryset = OfferDetail.objects.all()
     
 
 class OrderViewSet(ModelViewSet):
+    """
+    ViewSet for managing orders.
+
+    Handles order creation, listing, updating, and deletion with appropriate permissions.
+    """
     serializer_class = OrderCreateSerializer
     
     def get_queryset(self):
@@ -106,6 +122,11 @@ class OrderViewSet(ModelViewSet):
     
 
 class OrderCountView(APIView):
+    """
+    API view to get the count of in-progress orders for a business user.
+
+    Requires authentication.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, business_user_id):
@@ -120,6 +141,11 @@ class OrderCountView(APIView):
 
 
 class CompletedOrderCountView(APIView):
+    """
+    API view to get the count of completed orders for a business user.
+
+    Requires authentication.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, business_user_id):
@@ -140,8 +166,14 @@ class ReviewViewSet(ModelViewSet):
 
 
 class BaseInfoView(APIView):
+    """
+    API view to get basic information about the platform.
+
+    Includes review count, average rating, business profile count, and offer count.
+    Accessible without authentication.
+    """
     permission_classes = [AllowAny]
-    
+
     def get(self, request):
         data = {}
         review_stats = Review.objects.aggregate(review_count = Count('id'), average_rating = Avg('rating'))

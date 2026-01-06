@@ -80,14 +80,12 @@ The API will be available at `http://127.0.0.1:8000/`
 ### Key Endpoints
 
 #### Authentication
-All API endpoints require authentication except for offer listing and basic info.
-
 - `POST /api/registration/` - User registration
 - `POST /api/login/` - User login
 - `POST /api/logout/` - User logout
 - `GET /api/profile/` - Get User Profile Detail
 - `PATCH /api/profile/` - Update User Profile Detail
-- `GET /api/profiles/business/` - Lisdt all business profile (all authenticated users)
+- `GET /api/profiles/business/` - List all business profile (all authenticated users)
 - `GET /api/profiles/customer/` - Lisdt all customer profile (all authenticated users)
 
 

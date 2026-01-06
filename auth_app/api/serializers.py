@@ -5,15 +5,15 @@ from auth_app.models import Profile
 
 
 class LoginWithEmailSerializer(serializers.ModelSerializer):
-    '''
-    Login Serializer.
-    read all login informations
-    validate if the information are corresponding to the pretent user or not.
-    
-    '''
+    """
+    Serializer for user login with email.
+
+    Reads login information and validates if the provided credentials
+    correspond to an existing user.
+    """
     username = serializers.CharField()
-    password = serializers.CharField(write_only= True)
-    
+    password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
         fields = ['username', 'password']
@@ -22,9 +22,9 @@ class LoginWithEmailSerializer(serializers.ModelSerializer):
                 'write_only': True
             }
         }
-    
+
     def validate(self, data):
-        '''
+        """
         Validate the login data by checking username and password.
 
         Args:
@@ -35,15 +35,15 @@ class LoginWithEmailSerializer(serializers.ModelSerializer):
 
         Raises:
             ValidationError: If username or password is invalid.
-        '''
+        """
         username = data.get('username')
-        password = data.get('password')  
+        password = data.get('password')
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             raise serializers.ValidationError('Invalid email or password')
 
-        user = authenticate(username= username, password=password)
+        user = authenticate(username=username, password=password)
 
         if user is None:
             raise serializers.ValidationError('Invalid email or password')
@@ -100,10 +100,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return account
 
 class ProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Profile model.
+
+    Handles serialization and deserialization of Profile instances,
+    including related User fields.
+    """
     username = serializers.CharField(source='user.username', read_only=True)
-    first_name = serializers.CharField(source='user.first_name')
-    last_name = serializers.CharField(source='user.last_name')
-    email = serializers.EmailField(source='user.email')
+    first_name = serializers.CharField(source='user.first_name',  required=False)
+    last_name = serializers.CharField(source='user.last_name',  required=False)
+    email = serializers.EmailField(source='user.email', required=False)
     file = serializers.SerializerMethodField()
     class Meta:
         model = Profile
@@ -121,9 +127,32 @@ class ProfileSerializer(serializers.ModelSerializer):
             'type',
             'created_at',
         ]
-        
+
     def get_file(self, obj):
-        return obj.file.url if obj.file else '' 
+        """
+        Get the file URL for the profile.
+
+        Args:
+            obj (Profile): The Profile instance.
+
+        Returns:
+            str: The file URL or empty string if no file.
+        """
+        return obj.file.url if obj.file else ''
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        user = instance.user
+        allowed_user_fields = ['first_name', 'last_name', 'email']
+        for attr, value in user_data.items():
+            if attr in allowed_user_fields:
+                setattr(user, attr, value)
+        user.save()
+        return instance
         
 class ProfileCustomerSerialiser(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
