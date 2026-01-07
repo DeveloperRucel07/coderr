@@ -87,6 +87,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         
         pw = self.validated_data['password']
         repeated_pw = self.validated_data['repeated_password']
+        profile_type = self.validated_data['type']
         
         if pw != repeated_pw:
             raise serializers.ValidationError({'error':'passwords dont match'})
@@ -97,6 +98,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
         account = User(email = self.validated_data['email'], username = self.validated_data['username'])
         account.set_password(pw)
         account.save()
+        account.profile.type = profile_type
+        account.profile.save()
         return account
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -110,7 +113,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name',  required=False)
     last_name = serializers.CharField(source='user.last_name',  required=False)
     email = serializers.EmailField(source='user.email', required=False)
-    file = serializers.SerializerMethodField()
+    file = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = Profile
         fields = [

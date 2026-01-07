@@ -1,5 +1,5 @@
 from  django_filters import FilterSet, NumberFilter
-from coderr_app.models import Offer
+from coderr_app.models import Offer, Review
 
 class OfferFilter(FilterSet):
     creator_id = NumberFilter(field_name='user__id')
@@ -16,4 +16,10 @@ class OfferFilter(FilterSet):
     def filter_max_delivery_time(self, queryset, name, value):
         return queryset.filter(details__delivery_time_in_days__lte=value).distinct()
 
+class ReviewFilter(FilterSet):
+    business_user_id = NumberFilter(field_name="business_user__id")
+    reviewer_id = NumberFilter(field_name="reviewer__id")
 
+    class Meta:
+        model = Review
+        fields = ["business_user_id", "reviewer_id"]

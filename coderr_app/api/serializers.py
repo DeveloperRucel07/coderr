@@ -1,6 +1,4 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from django.db import transaction
 from django.contrib.auth.models import User
 from coderr_app.models import Offer, OfferDetail, Order, Review
 
@@ -33,6 +31,7 @@ class OfferSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user']
         
     def validate_details(self, value):
+
         if len(value) != 3:
             raise serializers.ValidationError( 'An offer must contain exactly 3 details.')
         offer_types = {detail['offer_type'] for detail in value}
@@ -71,23 +70,14 @@ class OfferListSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    min_price = serializers.SerializerMethodField()
-    min_delivery_time = serializers.SerializerMethodField()
+    min_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    min_delivery_time = serializers.IntegerField(read_only=True)
     user_details = UserDetailSerialiser(source = 'user', read_only = True)
 
     class Meta:
         model = Offer
         fields = [ 'id', 'user', 'title', 'image', 'description', 'created_at', 'updated_at', 'details', 'min_price', 'min_delivery_time', 'user_details' ]
-        
-    def get_min_price(self, obj):
-        return obj.details.order_by('price').values_list(
-            'price', flat=True
-        ).first()
-        
-    def get_min_delivery_time(self, obj):
-        return obj.details.order_by('delivery_time_in_days').values_list(
-            'delivery_time_in_days', flat=True
-        ).first()
+
 
 class OfferUpdateSerializer(serializers.ModelSerializer):
     details = OfferDetailUpdateSerializer(many=True, required=False)
@@ -103,7 +93,6 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f'Invalid offer type: {offer_type}')
         return value
         
-    # @transaction.atomic
     def update(self, instance, validated_data):
         details_data = validated_data.pop('details', None)
         for attr, value in validated_data.items():

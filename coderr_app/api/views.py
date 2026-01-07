@@ -1,4 +1,4 @@
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, Min
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from auth_app.models import Profile
 from coderr_app.models import Offer, Review, OfferDetail, Order
-from .filters import OfferFilter
+from .filters import OfferFilter, ReviewFilter
 from .limit_paginations import OfferPagination
 from .serializers import  OfferDetailSerializer, OfferUpdateSerializer, OrderCreateSerializer, OfferListSerializer, OfferSerializer, OrderSerializer, OrderStatusUpdateSerializer, ReviewSerializer, OfferDetailOrderSerializer
 from .permissions import IsAdminOrStaff, IsBusinessOrCustomerUser, IsBusinessUserOrOwnerOrReadOnly, IsBusinessUserOrder, IsCustomerReviewer, IsReviewOwnerOrReadOnly
@@ -24,7 +24,7 @@ class OfferModelViewSet(ModelViewSet):
     Handles offer creation, listing, updating, and deletion with appropriate permissions.
     Supports filtering, searching, and ordering.
     """
-    queryset = Offer.objects.prefetch_related('details')
+    queryset = Offer.objects.prefetch_related('details').annotate(min_price=Min('details__price'), min_delivery_time=Min('details__delivery_time_in_days'))
     pagination_class = OfferPagination
     filter_backends = [ DjangoFilterBackend, SearchFilter, OrderingFilter ]
     filterset_class = OfferFilter
@@ -163,6 +163,10 @@ class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
     permission_classes = [IsCustomerReviewer, IsReviewOwnerOrReadOnly]
     serializer_class = ReviewSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_class = ReviewFilter
+    ordering_fields = ["updated_at", "rating"]
+    ordering = ["-updated_at"]
 
 
 class BaseInfoView(APIView):
@@ -175,6 +179,19 @@ class BaseInfoView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        """Handle GET request and return platform statistics.
+         Statistics returned:
+        - review_count (int): Total number of reviews.
+        - average_rating (float): Average review rating rounded to 1 decimal place. Returns 0 if no reviews exist.
+        - business_profile_count (int): Number of profiles with type 'business'.
+        - offer_count (int): Total number of offers.
+
+        Args:
+            request (HttpRequest): The incoming HTTP request object.
+
+        Returns:
+            Response: statatistics data with HTTP 200 OK status.
+        """
         data = {}
         review_stats = Review.objects.aggregate(review_count = Count('id'), average_rating = Avg('rating'))
         data['review_count'] = review_stats['review_count']
