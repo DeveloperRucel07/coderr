@@ -19,9 +19,9 @@ db.py
 **/migrations/*
 !**/migrations/__init__.py
 coderr_app/migrations/*.py
-!coderr_app/migrations/__init__.
+!coderr_app/migrations/__init__.py
 auth_app/migrations/*.py
-!auth_app/migrations/__init__.
+!auth_app/migrations/__init__.py
 # Environment variables
 .env
 .env.*
