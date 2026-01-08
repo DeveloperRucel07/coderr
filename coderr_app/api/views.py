@@ -44,6 +44,12 @@ class OfferModelViewSet(ModelViewSet):
         return [IsAuthenticated()]
     
     def get_serializer_class(self):
+        """
+        Get the serializer class for the current action.
+
+        Returns:
+            Serializer: The appropriate serializer class.
+        """
         if self.action == 'list':
             return OfferListSerializer
         if self.action == 'retrieve':
@@ -81,11 +87,17 @@ class OrderViewSet(ModelViewSet):
         return Order.objects.filter(Q(customer_user=user) | Q(business_user=user))
 
     def get_serializer_context(self):
+        """
+        Get the serializer context.
+
+        Returns:
+            dict: The context dictionary with request.
+        """
         return {'request': self.request}
     
     def get_permissions(self):
         if self.action == 'list':
-            return [IsBusinessOrCustomerUser()]
+            return [IsBusinessOrCustomerUser(), IsAuthenticated()]
         if self.action == 'retrieve':
             return [IsAuthenticated(), IsBusinessUserOrOwnerOrReadOnly(), IsBusinessOrCustomerUser()]
         if self.action == 'create':
@@ -137,7 +149,7 @@ class OrderCountView(APIView):
         
         count = Order.objects.filter( business_user=user, status='in_progress').count()
 
-        return Response({'order-count': +count}, status=status.HTTP_200_OK)
+        return Response({'order_count': count}, status=status.HTTP_200_OK)
 
 
 class CompletedOrderCountView(APIView):

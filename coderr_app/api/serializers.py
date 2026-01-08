@@ -41,6 +41,20 @@ class OfferSerializer(serializers.ModelSerializer):
         return value
     
     def validate(self, attrs):
+        """
+        Validate the entire serializer data.
+
+        Ensures only business users can create offers.
+
+        Args:
+            attrs (dict): The serializer data.
+
+        Returns:
+            dict: The validated data.
+
+        Raises:
+            ValidationError: If the user is not a business user.
+        """
         request = self.context['request']
         if request.user.profile.type != 'business':
             raise serializers.ValidationError('Only business users can create offers.')
@@ -83,9 +97,23 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
     details = OfferDetailUpdateSerializer(many=True, required=False)
     class Meta:
         model = Offer
-        fields = [ 'title', 'description', 'image', 'details'  ]
+        fields = ['id', 'title', 'description', 'image', 'details'  ]
     
     def validate_details(self, value):
+        """
+        Validate the details for offer update.
+
+        Ensures all offer types are valid.
+
+        Args:
+            value (list): List of detail dictionaries.
+
+        Returns:
+            list: The validated details.
+
+        Raises:
+            ValidationError: If an invalid offer type is provided.
+        """
         allowed_types = {'basic', 'standard', 'premium'}
         for detail in value:
             offer_type = detail.get('offer_type')
@@ -131,9 +159,27 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         fields = ['id',  'user',  'title',  'image',  'description',  'created_at',  'updated_at',  'details', 'min_price', 'min_delivery_time'  ]
         
     def get_min_price(self, obj):
+        """
+        Get the minimum price from the offer details.
+
+        Args:
+            obj (Offer): The offer instance.
+
+        Returns:
+            float: The minimum price.
+        """
         return obj.details.order_by('price').values_list('price', flat=True ).first()
         
     def get_min_delivery_time(self, obj):
+        """
+        Get the minimum delivery time from the offer details.
+
+        Args:
+            obj (Offer): The offer instance.
+
+        Returns:
+            int: The minimum delivery time in days.
+        """
         return obj.details.order_by('delivery_time_in_days').values_list('delivery_time_in_days', flat=True).first()
 
 
@@ -183,6 +229,20 @@ class OrderStatusUpdateSerializer(serializers.ModelSerializer):
         fields = ['status']
 
     def validate_status(self, value):
+        """
+        Validate the order status.
+
+        Ensures the status is one of the allowed values.
+
+        Args:
+            value (str): The status value.
+
+        Returns:
+            str: The validated status.
+
+        Raises:
+            ValidationError: If the status is invalid.
+        """
         allowed_statuses = {'in_progress', 'completed', 'cancelled'}
 
         if value not in allowed_statuses:

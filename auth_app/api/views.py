@@ -90,9 +90,20 @@ class ProfilesBusinessListView(ListAPIView):
    
     
 class ProfilesCustomerListView(ListAPIView):
+    """
+    API view to list customer profiles.
+
+    Requires authentication.
+    """
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileCustomerSerialiser
     def get_queryset(self):
+        """
+        Get the queryset for customer profiles.
+
+        Returns:
+            QuerySet: Profiles with type 'customer'.
+        """
         return Profile.objects.filter(type ='customer')
     
     

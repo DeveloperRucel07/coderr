@@ -10,9 +10,34 @@ class IsAdminOrStaff(BasePermission):
     """
 
     def has_permission(self, request, view):
+        """
+        Check if the user has permission to access the view.
+
+        Grants permission for all methods except DELETE, which requires admin or staff status.
+
+        Args:
+            request (HttpRequest): The request object.
+            view (View): The view being accessed.
+
+        Returns:
+            bool: True if permission is granted, False otherwise.
+        """
         return (request.user.is_staff or request.user.is_superuser)
 
     def has_object_permission(self, request, view, obj):
+        """
+        Check if the user has permission to access the specific object.
+
+        For DELETE method, requires admin or staff status. For other methods, always True.
+
+        Args:
+            request (HttpRequest): The request object.
+            view (View): The view being accessed.
+            obj: The object being accessed.
+
+        Returns:
+            bool: True if permission is granted, False otherwise.
+        """
         if request.method == 'DELETE':
             return (request.user.is_staff or request.user.is_superuser)
         return True
@@ -43,6 +68,18 @@ class IsBusinessUserOrder(BasePermission):
     """
 
     def has_permission(self, request, view):
+        """
+        Check if the user has permission to access the view.
+
+        Allows read access to all, but write access only to business users.
+
+        Args:
+            request (HttpRequest): The request object.
+            view (View): The view being accessed.
+
+        Returns:
+            bool: True if permission is granted, False otherwise.
+        """
         if request.method in SAFE_METHODS:
             return True
         if not request.user or not request.user.is_authenticated:
@@ -50,7 +87,19 @@ class IsBusinessUserOrder(BasePermission):
         return getattr(request.user.profile, 'type', None) == 'business'
 
     def has_object_permission(self, request, view, obj):
+        """
+        Check if the user has permission to access the specific object.
 
+        Allows read access to all, but write access only to the business user associated with the order.
+
+        Args:
+            request (HttpRequest): The request object.
+            view (View): The view being accessed.
+            obj: The object being accessed (Order instance).
+
+        Returns:
+            bool: True if permission is granted, False otherwise.
+        """
         if request.method in SAFE_METHODS:
             return True
         return obj.business_user == request.user
@@ -62,6 +111,18 @@ class IsCustomerReviewer(BasePermission):
     """
 
     def has_permission(self, request, view):
+        """
+        Check if the user has permission to access the view.
+
+        Allows read access to all, but write access only to customer users.
+
+        Args:
+            request (HttpRequest): The request object.
+            view (View): The view being accessed.
+
+        Returns:
+            bool: True if permission is granted, False otherwise.
+        """
         if request.method in SAFE_METHODS:
             return True
 
@@ -84,6 +145,20 @@ class IsBusinessOrCustomerUser(BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
+        """
+        Check if the user has permission to access the specific object.
+
+        Allows read access to customer and business users involved in the order.
+        Write access (PATCH) is restricted to the business user, and DELETE requires admin or staff status.
+
+        Args:
+            request (HttpRequest): The request object.
+            view (View): The view being accessed.
+            obj: The object being accessed (Order instance).
+
+        Returns:
+            bool: True if permission is granted, False otherwise.
+        """
         user = request.user
         if request.method in SAFE_METHODS:
             return (obj.customer_user == user or obj.business_user == user)

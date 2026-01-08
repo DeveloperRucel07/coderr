@@ -144,6 +144,16 @@ class ProfileSerializer(serializers.ModelSerializer):
         return obj.file.url if obj.file else ''
 
     def update(self, instance, validated_data):
+        """
+        Update the profile and associated user.
+
+        Args:
+            instance (Profile): The profile instance to update.
+            validated_data (dict): The validated data.
+
+        Returns:
+            Profile: The updated profile instance.
+        """
         user_data = validated_data.pop('user', {})
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
