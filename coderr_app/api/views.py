@@ -103,7 +103,7 @@ class OrderViewSet(ModelViewSet):
         if self.action == 'create':
             return [IsAuthenticated(), IsCustomerReviewer()]
         if self.action == 'partial_update':
-            return [IsAuthenticated(), IsBusinessUserOrder(), IsBusinessOrCustomerUser()]
+            return [IsAuthenticated(), IsBusinessOrCustomerUser()]
         if self.action == 'destroy':
             return [IsAuthenticated(), IsAdminOrStaff()]
         return [IsBusinessOrCustomerUser()]
@@ -123,10 +123,12 @@ class OrderViewSet(ModelViewSet):
         return Response( OrderSerializer(order).data, status=status.HTTP_201_CREATED)
     
     def partial_update(self, request, *args, **kwargs):
-        order = self.get_object()
+        order = Order.objects.filter(id=kwargs['pk']).first()
         user = request.user
+        if not order:
+            return Response({'detail':'Order not found'}, status=status.HTTP_404_NOT_FOUND)
         if user != order.business_user:
-            return Response({'detail':'You dont have permission to perform this action'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail':'You dont have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
         serialiser = self.get_serializer(order, data = request.data)
         serialiser.is_valid(raise_exception=True)
         data = serialiser.save()

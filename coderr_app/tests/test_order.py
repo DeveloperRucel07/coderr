@@ -107,12 +107,18 @@ class OrderTestCase(APITestCase):
         )
         
     def test_get_all_order(self):
+        """
+        Test that a business user can retrieve all their orders.
+        """
         url = reverse('order-list')
         response = self.client2.get(url) # 'client2' customer or business user can only see they orders.
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
     
     def test_customer_create_order(self):
+        """
+        Test that a customer can create an order for an offer detail.
+        """
         url = reverse('order-list')
         data = {
             'offer_detail_id': self.premium2.id
@@ -121,6 +127,9 @@ class OrderTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         
     def test_business_create_order(self):
+        """
+        Test that a business user cannot create an order for their own offer.
+        """
         url = reverse('order-list')
         data = {
             'offer_detail_id': self.premium.id
@@ -129,11 +138,17 @@ class OrderTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         
     def test_customer_get_order_detail(self):
+        """
+        Test that a customer can retrieve details of their order.
+        """
         url = reverse('order-detail', kwargs={'pk': self.order3.id})
         response = self.client4.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
     def test_business_and_owner_patch(self):
+        """
+        Test that a business user and owner can update the order status.
+        """
         url = reverse('order-detail', kwargs={'pk': self.order3.id})
         data = {
             'status': 'completed'
@@ -144,6 +159,9 @@ class OrderTestCase(APITestCase):
         self.assertEqual(self.order3.status, 'completed')
 
     def test_admin_staff_delete(self):
+        """
+        Test that an admin staff can delete an order.
+        """
         url = reverse('order-detail', kwargs={'pk': self.order3.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

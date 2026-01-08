@@ -1,4 +1,7 @@
+from django.http import Http404
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+
+from coderr_app.models import Order
 
 
 
@@ -100,6 +103,7 @@ class IsBusinessUserOrder(BasePermission):
         Returns:
             bool: True if permission is granted, False otherwise.
         """
+
         if request.method in SAFE_METHODS:
             return True
         return obj.business_user == request.user
