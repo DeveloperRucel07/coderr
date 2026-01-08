@@ -99,6 +99,6 @@ class ProfilesCustomerListView(ListAPIView):
 class UserProfileGetUpdateView(RetrieveUpdateAPIView):
     permission_classes = [IsOwnerOrReadOnly, IsAuthenticated]
     serializer_class = ProfileSerializer
-    queryset = Profile.objects.all()
+    queryset = Profile.objects.select_related("user")
     http_method_names = ['get', 'patch']
     

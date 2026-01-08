@@ -14,7 +14,7 @@ class Profile(models.Model):
         ('business', 'Business'),
     )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', primary_key=True)
     file = models.ImageField(upload_to='profiles/', default='', blank=True)
     location = models.CharField(max_length=255, blank=True, default='')
     tel = models.CharField(max_length=30, blank=True, default='')

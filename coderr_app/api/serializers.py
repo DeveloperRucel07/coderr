@@ -20,7 +20,7 @@ class OfferDetailUpdateSerializer(serializers.ModelSerializer):
     offer_type = serializers.ChoiceField(choices=OfferDetail.OFFER_TYPE_CHOICES, required = True)
     class Meta:
         model = OfferDetail
-        fields = [  'title',  'revisions',  'delivery_time_in_days',  'price',  'features',  'offer_type']
+        fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
 
 class OfferSerializer(serializers.ModelSerializer):
     details = OfferDetailOrderSerializer(many=True)

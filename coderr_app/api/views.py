@@ -137,7 +137,7 @@ class OrderCountView(APIView):
         
         count = Order.objects.filter( business_user=user, status='in_progress').count()
 
-        return Response({'order-count': count}, status=status.HTTP_200_OK)
+        return Response({'order-count': +count}, status=status.HTTP_200_OK)
 
 
 class CompletedOrderCountView(APIView):
@@ -161,7 +161,7 @@ class CompletedOrderCountView(APIView):
 
 class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
-    permission_classes = [IsCustomerReviewer, IsReviewOwnerOrReadOnly]
+    permission_classes = [IsCustomerReviewer, IsReviewOwnerOrReadOnly, IsAuthenticated]
     serializer_class = ReviewSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ReviewFilter
