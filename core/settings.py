@@ -28,7 +28,10 @@ SECRET_KEY = 'django-insecure-1efd#cd5(wlpvtf(_*jm=7hu!e8-uhjq++j@@7315y$b!vh4%9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+'apicoderr.rucel-tsafack.com',
+'34.89.230.147'
+]
 
 
 # Application definition
@@ -145,9 +148,13 @@ REST_FRAMEWORK = {
 }
 
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://apicoderr.rucel-tsafack.com"
+]
+
+
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
+    "https://coderr.rucel-tsafack.com",
 ]
 
 CORS_ALLOW_HEADERS = [
